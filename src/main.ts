@@ -71,7 +71,7 @@ async function bootstrap() {
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api', app, document);
+  SwaggerModule.setup('swagger', app, document);
 
   // Enable Cross-Origin Resource Sharing (CORS)
   app.enableCors();

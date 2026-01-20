@@ -1,38 +1,45 @@
-/* eslint-disable prettier/prettier */
 import { Controller, Get, Post, Body, Param } from '@nestjs/common';
+import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { QueryReportService } from './query-report.service';
 import { CreateQueryReportDto } from './dto/create-query-report.dto';
 
-@Controller('query-reports')
+@ApiTags('query-reports')
+@Controller()
 export class QueryReportController {
     constructor(private readonly queryReportService: QueryReportService) { }
 
-    @Post()
+    @Post('execute-query')
+    @ApiOperation({ summary: 'Execute a query from configuration or raw SQL' })
+    async executeQuery(@Body() body: any) {
+        return await this.queryReportService.executeQuery(body);
+    }
+
+    @Post('query-reports')
     async create(@Body() dto: CreateQueryReportDto) {
         return await this.queryReportService.create(dto);
     }
 
-    @Get()
+    @Get('query-reports')
     async findAll() {
         return await this.queryReportService.findAll();
     }
 
-    @Get(':id')
+    @Get('query-reports/:id')
     async findOne(@Param('id') id: string) {
         return await this.queryReportService.findOne(id);
     }
 
-    @Post(':id/execute')
+    @Post('query-reports/:id/execute')
     async execute(@Param('id') id: string, @Body() params: Record<string, any>) {
         return await this.queryReportService.execute(id, params);
     }
 
-    @Post(':id/regenerate')
+    @Post('query-reports/:id/regenerate')
     async regenerate(@Param('id') id: string) {
         return await this.queryReportService.regenerate(id);
     }
 
-    @Post('execute-raw')
+    @Post('query-reports/execute-raw')
     async executeRaw(@Body() body: { sql: string; params?: any[] }) {
         return await this.queryReportService.executeRaw(body.sql, body.params || []);
     }
