@@ -2,6 +2,7 @@ import { Controller, Get, Post, Body, Param } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { QueryReportService } from './query-report.service';
 import { CreateQueryReportDto } from './dto/create-query-report.dto';
+import { ExecuteQueryDto } from './dto/execute-query.dto';
 
 @ApiTags('query-reports')
 @Controller()
@@ -10,14 +11,14 @@ export class QueryReportController {
 
     @Post('execute-query')
     @ApiOperation({ summary: 'Execute a query from configuration or raw SQL' })
-    async executeQuery(@Body() body: any) {
-        return await this.queryReportService.executeQuery(body);
+    async executeQuery(@Body() dto: ExecuteQueryDto) {
+        return await this.queryReportService.executeQuery(dto);
     }
 
     @Post('save-as-template')
     @ApiOperation({ summary: 'Save a query configuration as a template' })
-    async saveAsTemplate(@Body() body: any) {
-        return await this.queryReportService.saveAsTemplate(body);
+    async saveAsTemplate(@Body() dto: ExecuteQueryDto) {
+        return await this.queryReportService.saveAsTemplate(dto);
     }
 
     @Post('query-reports')
