@@ -15,7 +15,7 @@ export class QueryReport {
   @Column()
   name: string;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   code: string | null;
 
   @Column({ type: 'text', nullable: true })
