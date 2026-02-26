@@ -32,13 +32,29 @@ export class QueryReportService {
 
     async execute(id: string, params: Record<string, any>): Promise<any[]> {
         const report = await this.findOne(id);
-        const substitutedSql = this.substituteParams(report.generatedSql, params);
-        return await this.dataSource.query(substitutedSql);
+        let sqlToExecute = report.generatedSql;
+
+        // If it's a builder query, we might want to rebuild it to get the freshest SQL
+        if (report.config && !report.config.sql) {
+            sqlToExecute = this.buildSQLFromConfig(report.config, params);
+        } else {
+            sqlToExecute = this.substituteParams(sqlToExecute, params);
+        }
+
+        return await this.dataSource.query(sqlToExecute);
     }
 
-    async regenerate(id: string): Promise<any[]> {
+    async regenerate(id: string): Promise<any> {
         const report = await this.findOne(id);
-        return await this.dataSource.query(report.generatedSql);
+        let sqlToExecute = report.generatedSql;
+
+        if (report.config && !report.config.sql) {
+            sqlToExecute = this.buildSQLFromConfig(report.config, {});
+            report.generatedSql = sqlToExecute;
+            await this.queryReportRepository.save(report);
+        }
+
+        return { generatedSql: sqlToExecute };
     }
 
     async executeRaw(sql: string, params: any[]): Promise<any[]> {
@@ -46,22 +62,68 @@ export class QueryReportService {
     }
 
     async executeQuery(body: any): Promise<any> {
-        const { mode, sql: customSql, queryConfig, params } = body;
-        let sqlToExecute: string;
+        try {
+            const { mode, sql: customSql, queryConfig, params, save, name, description, code } = body;
+            let sqlToExecute: string;
 
-        if (mode === 'custom') {
-            if (!customSql) throw new Error('SQL query is required in custom mode');
-            sqlToExecute = this.substituteParams(customSql, params || {});
-        } else if (mode === 'builder') {
-            if (!queryConfig) throw new Error('Query configuration is required in builder mode');
-            sqlToExecute = this.buildSQLFromConfig(queryConfig, params || {});
-        } else {
-            throw new Error("Invalid mode. Use 'custom' or 'builder'");
+            if (mode === 'custom') {
+                if (!customSql) throw new Error('SQL query is required in custom mode');
+                sqlToExecute = this.substituteParams(customSql, params || {});
+            } else if (mode === 'builder') {
+                if (!queryConfig) throw new Error('Query configuration is required in builder mode');
+                sqlToExecute = this.buildSQLFromConfig(queryConfig, params || {});
+            } else {
+                throw new Error("Invalid mode. Use 'custom' or 'builder'");
+            }
+
+            let savedReport: QueryReport | null = null;
+            if (save && name) {
+                savedReport = await this.create({
+                    name,
+                    code,
+                    description,
+                    config: queryConfig || { sql: customSql },
+                    generatedSql: sqlToExecute,
+                    parameters: params ? [params] : []
+                });
+            }
+
+            console.log('Executing SQL:', sqlToExecute);
+            const data = await this.dataSource.query(sqlToExecute);
+            return {
+                data,
+                params,
+                generatedSql: sqlToExecute,
+                reportId: savedReport?.id,
+                report: savedReport
+            };
+        } catch (error) {
+            console.error('Error executing query:', error);
+            throw new Error(`Query Execution Failed: ${error.message}`);
         }
+    }
 
-        console.log('Executing SQL:', sqlToExecute);
-        const data = await this.dataSource.query(sqlToExecute);
-        return { data, params, generatedSql: sqlToExecute };
+    async saveAsTemplate(body: any): Promise<any> {
+        const { name, code, description, mode, queryConfig, sql, params } = body;
+
+        if (!name) throw new Error('Name is required to save as template');
+
+        // Execute to get the latest SQL and verify it works
+        const result = await this.executeQuery({
+            mode,
+            queryConfig,
+            sql,
+            params,
+            save: true,
+            name,
+            code,
+            description
+        });
+
+        return {
+            message: 'Template saved successfully',
+            ...result
+        };
     }
 
     private quote(identifier: string): string {

@@ -1,6 +1,7 @@
 /* eslint-disable prettier/prettier */
 export class CreateQueryReportDto {
     name: string;
+    code?: string;
     description?: string;
     config: any;
     generatedSql: string;

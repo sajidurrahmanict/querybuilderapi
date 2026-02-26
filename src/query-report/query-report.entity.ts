@@ -15,6 +15,9 @@ export class QueryReport {
   @Column()
   name: string;
 
+  @Column({ nullable: true })
+  code: string | null;
+
   @Column({ type: 'text', nullable: true })
   description: string | null;
 

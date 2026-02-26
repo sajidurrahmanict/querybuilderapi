@@ -14,6 +14,12 @@ export class QueryReportController {
         return await this.queryReportService.executeQuery(body);
     }
 
+    @Post('save-as-template')
+    @ApiOperation({ summary: 'Save a query configuration as a template' })
+    async saveAsTemplate(@Body() body: any) {
+        return await this.queryReportService.saveAsTemplate(body);
+    }
+
     @Post('query-reports')
     async create(@Body() dto: CreateQueryReportDto) {
         return await this.queryReportService.create(dto);

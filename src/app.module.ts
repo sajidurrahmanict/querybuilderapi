@@ -49,6 +49,7 @@ import { User } from './user/user.entity/user.entity';
 import { TemplateModule } from './Template/template.module';
 import { QueryReportModule } from './query-report/query-report.module';
 import { JwtModule } from '@nestjs/jwt';
+import { DataSourceModule } from './data-source/data-source.module';
 
 @Module({
   imports: [
@@ -92,7 +93,8 @@ import { JwtModule } from '@nestjs/jwt';
     SurveyModuleModule,
     SurveyConfigModule,
     TemplateModule,
-    QueryReportModule
+    QueryReportModule,
+    DataSourceModule
 
   ],
 })
