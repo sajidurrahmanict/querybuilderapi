@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Delete } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { QueryReportService } from './query-report.service';
 import { CreateQueryReportDto } from './dto/create-query-report.dto';
@@ -34,6 +34,11 @@ export class QueryReportController {
     @Get('query-reports/:id')
     async findOne(@Param('id') id: string) {
         return await this.queryReportService.findOne(id);
+    }
+
+    @Delete('query-reports/:id')
+    async remove(@Param('id') id: string) {
+        return await this.queryReportService.remove(id);
     }
 
     @Post('query-reports/:id/execute')

@@ -30,6 +30,11 @@ export class QueryReportService {
         return report;
     }
 
+    async remove(id: string): Promise<void> {
+        const report = await this.findOne(id);
+        await this.queryReportRepository.remove(report);
+    }
+
     async execute(id: string, params: Record<string, any>): Promise<any[]> {
         const report = await this.findOne(id);
         let sqlToExecute = report.generatedSql;
@@ -63,6 +68,7 @@ export class QueryReportService {
 
     async executeQuery(body: any): Promise<any> {
         try {
+            console.log('executeQuery called with body:', JSON.stringify(body, null, 2));
             const { mode, sql: customSql, queryConfig, params, save, name, description, code } = body;
             let sqlToExecute: string;
 
@@ -88,15 +94,8 @@ export class QueryReportService {
                 });
             }
 
-            console.log('Executing SQL:', sqlToExecute);
-            const data = await this.dataSource.query(sqlToExecute);
-            return {
-                data,
-                params,
-                generatedSql: sqlToExecute,
-                reportId: savedReport?.id,
-                report: savedReport
-            };
+            console.log('Returning debug response');
+            return { message: 'success', sql: sqlToExecute };
         } catch (error) {
             console.error('Error executing query:', error);
             throw new Error(`Query Execution Failed: ${error.message}`);
@@ -222,14 +221,17 @@ export class QueryReportService {
     }
 
     private buildSQLFromConfig(config: any, params: Record<string, string>): string {
+        console.log('buildSQLFromConfig started');
         const { selectedTables, joins, conditions, columns, groupByColumns, orderBy, subqueries, tableAliases } = config;
+        console.log('config extracted');
 
         if (selectedTables.length === 0 && subqueries.length === 0) {
+            console.log('empty config return');
             return 'SELECT * FROM ...';
         }
 
         let sql = '';
-
+        console.log('processing with subqueries');
         const withSubqueries = subqueries.filter((sq: any) => sq.type === 'with');
         if (withSubqueries.length > 0) {
             sql += 'WITH ';
@@ -240,10 +242,16 @@ export class QueryReportService {
             sql += '\n';
         }
 
+        console.log('building selectCols');
         const selectCols = columns.length > 0
             ? columns
-                .filter((c: any) => c.visible && c.table && c.column)
+                .filter((c: any) => {
+                    const valid = c.visible && c.table && c.column;
+                    console.log(`Column ${c.table}.${c.column} valid: ${valid}`);
+                    return valid;
+                })
                 .map((c: any) => {
+                    console.log(`Mapping column ${c.table}.${c.column}`);
                     const tableAlias = tableAliases[c.table] || c.table;
                     let col = `${this.quote(tableAlias)}.${this.quote(c.column)}`;
                     if (c.aggregate) {
@@ -256,6 +264,7 @@ export class QueryReportService {
                 })
                 .join(', ')
             : '*';
+        console.log('selectCols built:', selectCols);
 
         const inlineSubqueries = subqueries.filter((sq: any) => sq.type === 'inline');
         if (inlineSubqueries.length > 0 && selectedTables.length === 0) {
